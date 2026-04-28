@@ -1,587 +1,678 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>江南会议签到系统</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #1a3a5c 0%, #2d6a8a 50%, #1a3a5c 100%);
-            min-height: 100vh; padding: 20px;
-        }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .header { text-align: center; color: white; margin-bottom: 30px; }
-        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
-        .header p { opacity: 0.85; }
-
-        .panel {
-            background: white; border-radius: 20px; padding: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.25); display: none;
-        }
-        .panel.active { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-weight: 600; margin-bottom: 6px; color: #333; font-size: 0.95em; }
-        .form-group input, .form-group select {
-            width: 100%; padding: 12px 14px; border: 2px solid #e8e8e8;
-            border-radius: 10px; font-size: 1em; font-family: inherit;
-        }
-        .form-group input:focus { outline: none; border-color: #2d6a8a; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
-        .btn {
-            padding: 12px 28px; border: none; border-radius: 10px;
-            font-size: 1em; cursor: pointer; font-family: inherit;
-            font-weight: 600; transition: all 0.2s;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #2d6a8a, #1a3a5c); color: white; width: 100%;
-        }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(45,106,138,0.4); }
-        .btn-secondary { background: #f0f4f8; color: #2d6a8a; border: 1px solid #d0dce4; }
-        .btn-secondary:hover { background: #e8f0f5; }
-        .btn-danger { background: #fff0f0; color: #d94f4f; border: 1px solid #f5d0d0; }
-        .btn-danger:hover { background: #ffe0e0; }
-        .btn-sm { padding: 8px 16px; font-size: 0.85em; }
-
-        .tab-bar {
-            display: flex; gap: 6px; margin-bottom: 24px;
-            background: #f0f4f8; border-radius: 14px; padding: 5px;
-        }
-        .tab-btn {
-            flex: 1; padding: 10px; border: none; border-radius: 10px;
-            font-size: 0.9em; cursor: pointer; font-weight: 600;
-            background: transparent; color: #666; transition: all 0.2s;
-        }
-        .tab-btn.active { background: white; color: #1a3a5c; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-
-        .signin-card {
-            background: white; border-radius: 20px; padding: 36px 30px;
-            text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-        }
-        .signin-card .badge {
-            background: linear-gradient(135deg, #2d6a8a, #1a3a5c); color: white;
-            padding: 6px 18px; border-radius: 20px; font-size: 0.85em;
-            font-weight: 600; display: inline-block; margin-bottom: 12px;
-        }
-        .signin-card h2 { color: #1a3a5c; font-size: 1.5em; margin-bottom: 6px; }
-        .signin-card .meta { color: #888; font-size: 0.9em; margin-bottom: 24px; }
-        .signin-card .success-msg { color: #27ae60; font-size: 1.3em; font-weight: 700; margin-bottom: 12px; display: none; }
-        .signin-card.succ .success-msg { display: block; }
-        .signin-card.succ .form-body { display: none; }
-        .signin-card.succ .succ-detail { display: block; }
-        .signin-card .succ-detail { display: none; color: #666; font-size: 0.95em; }
-
-        .history-list { display: flex; flex-direction: column; gap: 14px; }
-        .history-item {
-            display: flex; align-items: flex-start; gap: 14px;
-            background: #f9fafb; border: 1px solid #e8ecf0;
-            border-radius: 14px; padding: 18px 20px;
-        }
-        .history-info { flex: 1; }
-        .history-info h4 { color: #1a3a5c; font-size: 1.05em; margin-bottom: 5px; }
-        .history-info p { color: #777; font-size: 0.88em; margin-bottom: 3px; }
-        .history-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-
-        .share-box {
-            background: linear-gradient(135deg, #f0f7ff, #e8f4fd);
-            border: 1px solid #c0d8f0; border-radius: 12px; padding: 16px; margin-top: 12px;
-        }
-        .share-box .s-title { font-size: 0.88em; font-weight: 600; color: #2d6a8a; margin-bottom: 8px; }
-        .share-box .url-row { display: flex; gap: 8px; margin-bottom: 10px; }
-        .share-box input {
-            flex: 1; padding: 8px 12px; font-size: 0.82em;
-            border: 1px solid #c0d8f0; border-radius: 8px;
-            background: white; font-family: monospace; color: #555;
-        }
-        .share-box input:focus { outline: none; border-color: #2d6a8a; }
-        .qr-center { text-align: center; }
-        .qr-center img { border-radius: 10px; border: 1px solid #eee; }
-        .qr-hint { font-size: 0.78em; color: #888; margin-top: 6px; }
-
-        .empty-tip { text-align: center; color: #aaa; padding: 40px; }
-
-        .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
-        .stat-card { background: linear-gradient(135deg, #2d6a8a, #1a3a5c); color: white; border-radius: 14px; padding: 20px 16px; text-align: center; }
-        .stat-card.n2 { background: linear-gradient(135deg, #27ae60, #1e8449); }
-        .stat-card.n3 { background: linear-gradient(135deg, #e67e22, #d35400); }
-        .stat-card .num { font-size: 2em; font-weight: 800; }
-        .stat-card .lbl { font-size: 0.82em; opacity: 0.85; margin-top: 4px; }
-        .bar-chart { margin-top: 16px; }
-        .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .bar-label { font-size: 0.85em; color: #666; width: 80px; flex-shrink: 0; text-align: right; }
-        .bar-bg { flex: 1; height: 22px; background: #f0f4f8; border-radius: 6px; overflow: hidden; }
-        .bar-fill { height: 100%; background: linear-gradient(90deg, #2d6a8a, #1a3a5c); border-radius: 6px; transition: width 0.5s; }
-        .bar-fill.n2 { background: linear-gradient(90deg, #27ae60, #1e8449); }
-        .bar-val { font-size: 0.82em; color: #888; width: 40px; flex-shrink: 0; }
-
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; padding: 20px; }
-        .modal.active { display: flex; animation: fadeIn 0.3s; }
-        .modal-box { background: white; border-radius: 20px; padding: 30px; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; }
-        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-head h3 { color: #1a3a5c; }
-        .modal-close { background: none; border: none; font-size: 1.5em; cursor: pointer; color: #999; }
-        .att-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
-        .att-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f9fafb; border-radius: 10px; }
-        .att-av { width: 36px; height: 36px; background: linear-gradient(135deg, #2d6a8a, #1a3a5c); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9em; flex-shrink: 0; }
-        .att-name { font-weight: 600; color: #333; font-size: 0.95em; }
-        .att-dept { font-size: 0.8em; color: #999; }
-        .att-time { margin-left: auto; font-size: 0.8em; color: #aaa; flex-shrink: 0; }
-        .modal-foot { display: flex; gap: 10px; margin-top: 16px; }
-        .modal-foot .btn { flex: 1; padding: 10px; font-size: 0.9em; }
-
-        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 10px; font-size: 0.9em; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
-        .toast.show { opacity: 1; }
-        .toast.ok { background: #27ae60; }
-        .toast.er { background: #e74c3c; }
-
-        @media (max-width: 600px) {
-            .form-row { grid-template-columns: 1fr; }
-            .stat-cards { grid-template-columns: 1fr; }
-            .history-item { flex-direction: column; }
-            .history-actions { flex-direction: row; width: 100%; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>江南会议签到系统</title>
+<style>
+:root{--c:#1a5cad;--cg:#2a7a3a;--cr:#c0392b;--cb:#2980b9;--co:#d35400;--cy:#b7950b;--cy2:#7d6608;--cl:#6c3483;--cy3:#1a5276;--cy4:#17202a;--c5:#566573;--c6:#7b241c;--c7:#1e8449;--c8:#1f618d;--c9:#7d6608;--c10:#512e5f;--c11:#0e6655;--c12:#6e2f1a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Microsoft YaHei','PingFang SC','Helvetica Neue',Helvetica,Arial,sans-serif;background:#eef2f7;color:#222;min-height:100vh}
+.app{max-width:680px;margin:0 auto;padding:20px 16px 80px}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:2px solid var(--c);margin-bottom:20px}
+header h1{font-size:20px;color:var(--c)}
+.hdr-op{display:flex;gap:8px}
+.btn{background:var(--c);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-o{background:#fff;color:var(--c);border:1.5px solid var(--c)}
+.btn-g{background:var(--cg)}
+.btn-r{background:var(--cr)}
+.btn-b{background:var(--cb)}
+.btn-y{background:var(--co)}
+.btn-sub{font-size:12px;padding:5px 10px}
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #eee;color:var(--c)}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-box{background:var(--c);color:#fff;border-radius:10px;padding:14px 10px;text-align:center}
+.stat-box.g{background:var(--cg)}
+.stat-box.b{background:var(--cb)}
+.stat-box.y{background:var(--cy)}
+.stat-box span{display:block;font-size:22px;font-weight:700}
+.stat-box small{font-size:11px;opacity:.85}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:13px;color:#555;margin-bottom:5px;font-weight:500}
+input[type="text"],input[type="date"],input[type="time"],input[type="number"],textarea,select{width:100%;padding:9px 12px;border:1.5px solid #dde3ec;border-radius:8px;font-size:14px;font-family:inherit;color:#222;background:#fff;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--c)}
+textarea{resize:vertical;min-height:72px}
+.row{display:flex;gap:10px}
+.row .form-group{flex:1}
+.btn-row{display:flex;gap:10px;margin-top:16px}
+.att-list{max-height:420px;overflow-y:auto}
+.att-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f2f2f2}
+.att-item:last-child{border-bottom:none}
+.att-item input{flex:1;padding:6px 10px;border:1.5px solid #dde3ec;border-radius:6px;font-size:14px}
+.att-item input.ok{border-color:var(--cg);background:#f0fff4}
+.att-item input.err{border-color:var(--cr);background:#fff5f5}
+.att-item button{background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;opacity:.5;transition:opacity .15s}
+.att-item button:hover{opacity:1}
+.att-num{font-size:12px;color:#888;margin-top:8px}
+.att-dept{font-size:12px;color:var(--c);margin-top:4px}
+.hist-list{max-height:500px;overflow-y:auto}
+.hist-item{background:#f9fafc;border-radius:10px;padding:14px;margin-bottom:10px;border-left:3px solid var(--c)}
+.hist-item.done{border-left-color:var(--cg)}
+.hist-item h4{font-size:15px;margin-bottom:5px}
+.hist-item p{font-size:13px;color:#555;margin:3px 0}
+.hist-item .bar-bg{background:#e8edf4;border-radius:10px;height:8px;margin:8px 0;overflow:hidden}
+.hist-item .bar{height:100%;background:var(--cg);border-radius:10px;transition:width .4s}
+.hist-item .bar.warn{background:var(--cy)}
+.hist-item .bar.danger{background:var(--cr)}
+.link-row{display:flex;align-items:center;gap:6px;margin:10px 0}
+.link-row input{flex:1;padding:7px 10px;border:1.5px solid #dde3ec;border-radius:6px;font-size:12px;background:#f8f9fa;color:#555}
+.link-row .btn{font-size:12px;padding:7px 12px}
+.qr-area{text-align:center;margin:14px 0}
+.qr-area img{width:180px;height:180px;border-radius:10px;border:2px solid #eee}
+.download-row{display:flex;gap:10px;justify-content:center;margin-top:10px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px}
+.modal h2{font-size:17px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #eee}
+.modal-close{float:right;font-size:22px;cursor:pointer;opacity:.4;line-height:1}
+.modal-close:hover{opacity:.9}
+.dept-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.dept-tag{background:#eef3fb;color:var(--c);border:1.5px solid #c8d9f0;border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;transition:all .15s}
+.dept-tag:hover,.dept-tag.sel{background:var(--c);color:#fff;border-color:var(--c)}
+.dept-tag.imp{background:var(--cr);color:#fff;border-color:var(--cr)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--c);color:#fff;position:sticky;top:0;z-index:100;border-radius:0 0 14px 14px}
+.topbar h2{font-size:16px}
+.topbar button{background:none;border:none;color:#fff;cursor:pointer;font-size:20px;opacity:.85}
+.topbar button:hover{opacity:1}
+.empty{text-align:center;padding:40px 20px;color:#aaa;font-size:14px}
+.empty strong{display:block;font-size:16px;margin-bottom:6px;color:#ccc}
+.tab-bar{display:flex;gap:2px;background:#e8ecf2;border-radius:10px;padding:3px;margin-bottom:18px}
+.tab{color:var(--c);border:none;background:none;padding:7px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.tab:hover{background:rgba(26,92,173,.08)}
+.tab.on{background:#fff;color:var(--c);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.mt8{margin-top:8px}.mt14{margin-top:14px}
+.fr{float:right;font-size:13px;color:var(--c);cursor:pointer;padding:2px 6px}
+.info-box{background:#f0f7ff;border-left:3px solid var(--cb);border-radius:6px;padding:10px 14px;font-size:13px;color:var(--c);margin-bottom:14px;line-height:1.6}
+.info-box.r{background:#fff5f5;border-color:var(--cr);color:var(--cr)}
+.info-box.g{background:#f0fff8;border-color:var(--cg);color:var(--cg)}
+</style>
 </head>
 <body>
-<div class="container">
-
-    <!-- 主面板 -->
-    <div id="pnl-main" class="panel active">
-        <div class="header">
-            <h1>📋 江南会议签到系统</h1>
-            <p>JMT · 安全生产周例会</p>
-        </div>
-        <div class="tab-bar">
-            <button class="tab-btn active" onclick="switchTab('signin')">📝 会议签到</button>
-            <button class="tab-btn" onclick="switchTab('host')">🔧 签到管理</button>
-        </div>
-
-        <!-- 参会人员签到 -->
-        <div id="tab-signin">
-            <div class="signin-card" id="scard">
-                <div class="badge" id="scard-badge">会议签到</div>
-                <h2 id="scard-title">选择要签到的会议</h2>
-                <div class="meta" id="scard-meta"></div>
-                <div class="success-msg">✅ 签到成功！</div>
-                <div class="form-body">
-                    <select id="s-meeting" onchange="onSMeeting(this.value)" style="margin-bottom:14px;width:100%;padding:12px;border:2px solid #e0e8f0;border-radius:10px;font-size:1em;">
-                        <option value="">— 请先选择会议 —</option>
-                    </select>
-                    <div class="form-group"><label>姓名 *</label><input id="s-name" placeholder="请输入您的姓名" maxlength="20"></div>
-                    <div class="form-group"><label>部门 / 岗位</label><input id="s-dept" placeholder="如：生产部 / 品质部" maxlength="30"></div>
-                    <button class="btn btn-primary" onclick="doSignin()">确认签到</button>
-                </div>
-                <div class="succ-detail">
-                    <p id="succ-text"></p>
-                    <button class="btn btn-secondary" style="margin-top:16px;" onclick="resetSc()">再签到一次</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 管理界面 -->
-        <div id="tab-host" style="display:none;">
-            <div class="tab-bar" style="margin-bottom:16px;">
-                <button class="tab-btn active" onclick="switchSub('create')" id="btn-create">➕ 创建会议</button>
-                <button class="tab-btn" onclick="switchSub('history')" id="btn-history">📋 历史记录</button>
-                <button class="tab-btn" onclick="switchSub('stats')" id="btn-stats">📊 数据统计</button>
-            </div>
-
-            <div id="sub-create">
-                <div class="form-group"><label>会议主题 *</label><input id="m-name" placeholder="如：安全生产周例会" maxlength="50"></div>
-                <div class="form-row">
-                    <div class="form-group"><label>会议日期 *</label><input type="date" id="m-date"></div>
-                    <div class="form-group"><label>会议时间</label><input type="time" id="m-time" value="09:00"></div>
-                </div>
-                <div class="form-group"><label>会议地点</label><input id="m-addr" placeholder="如：大会议室 / 三楼培训室" maxlength="50"></div>
-                <div class="form-row">
-                    <div class="form-group"><label>主持人</label><input id="m-host" placeholder="主持人姓名" maxlength="20"></div>
-                    <div class="form-group"><label>记录人</label><input id="m-rec" placeholder="记录人姓名" maxlength="20"></div>
-                </div>
-                <div class="form-group"><label>应到人数</label><input id="m-exp" type="number" min="0" placeholder="填写总人数（选填）"></div>
-                <button class="btn btn-primary" onclick="createMeeting()">✅ 创建会议</button>
-            </div>
-
-            <div id="sub-history" style="display:none;">
-                <div id="hist-list" class="history-list"></div>
-            </div>
-
-            <div id="sub-stats" style="display:none;">
-                <div class="stat-cards">
-                    <div class="stat-card"><div class="num" id="st-total">0</div><div class="lbl">总会议数</div></div>
-                    <div class="stat-card n2"><div class="num" id="st-signed">0</div><div class="lbl">总签到人次</div></div>
-                    <div class="stat-card n3"><div class="num" id="st-rate">—</div><div class="lbl">平均出勤率</div></div>
-                </div>
-                <div class="bar-chart" id="bar-c"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 签到人独立页 -->
-    <div id="pnl-page" class="panel" style="padding:0;">
-        <div style="max-width:500px;margin:0 auto;">
-            <div class="signin-card" id="pcard">
-                <div class="badge" id="p-badge">会议签到</div>
-                <h2 id="p-title" style="color:#1a3a5c;margin-bottom:6px;"></h2>
-                <div id="p-meta" style="color:#888;font-size:0.9em;margin-bottom:24px;"></div>
-                <div class="success-msg">✅ 签到成功！</div>
-                <div class="form-body" id="p-form">
-                    <div class="form-group"><label>姓名 *</label><input id="p-name" placeholder="请输入您的姓名" maxlength="20"></div>
-                    <div class="form-group"><label>部门 / 岗位</label><input id="p-dept" placeholder="如：生产部 / 品质部" maxlength="30"></div>
-                    <button class="btn btn-primary" onclick="doPageSignin()">确认签到</button>
-                </div>
-                <div class="succ-detail" id="p-succ"></div>
-            </div>
-        </div>
-    </div>
+<div class="app" id="app">
+<header><h1>🏢 江南会议签到系统</h1><div class="hdr-op"><button class="btn btn-o btn-sub" id="btn-c">📋 创建会议</button></div></header>
+<div id="main"></div>
 </div>
-
-<!-- 详情弹窗 -->
-<div class="modal" id="md">
-    <div class="modal-box">
-        <div class="modal-head">
-            <h3 id="md-title">会议详情</h3>
-            <button class="modal-close" onclick="closeMd()">✕</button>
-        </div>
-        <div id="md-body"></div>
-        <div class="modal-foot">
-            <button class="btn btn-secondary" onclick="exportMd()">📥 导出CSV</button>
-            <button class="btn btn-danger" onclick="delMd()">🗑 删除</button>
-        </div>
-    </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
+<div class="modal-overlay" id="modal"><div class="modal" id="modal-body"></div></div>
 <script>
-// ============================================================
-//  数据存储
-// ============================================================
-var KEY = 'jmt_meetings_v2';
-var gId = null; // 当前弹窗会议ID
+(function(){
+var KEY='jmt_meetings_v2';
+var DEPT_LIST=['综合管理部','财务部','营销中心','技术研发中心','生产管理部','品质管理部','采购中心','资材管理部','总经办','其他'];
+var SUBS=['create','history','stats'];
+var curSub=SUBS[0];
+var curMid=null;
+var curView=null;
 
-function load() {
-    var d = localStorage.getItem(KEY);
-    return d ? JSON.parse(d) : [];
-}
-function save(d) {
-    localStorage.setItem(KEY, JSON.stringify(d));
-}
-function genId() {
-    return Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+function genId(){
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 }
 
-// ============================================================
-//  路由（hash）
-// ============================================================
-function init() {
-    document.getElementById('m-date').valueAsDate = new Date();
-    // 预置安全生产周例会
-    var today = new Date().toISOString().split('T')[0];
-    var now = new Date();
-    var t = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-    var d = load();
-    if (!d.find(function(m){ return m.name==='安全生产周例会' && m.date===today; })) {
-        d.push({id: genId(), name:'安全生产周例会', date:today, time:t, addr:'待定', host:'', rec:'', exp:0, att:[], created: new Date().toISOString()});
-        save(d);
+function escHtml(s){
+  if(s==null)return'';
+  s=String(s);
+  var d={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"};
+  return s.replace(/[&<>"']/g,function(c){return d[c];});
+}
+
+function loadData(){
+  try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){return[];}
+}
+function saveData(d){localStorage.setItem(KEY,JSON.stringify(d));}
+
+function go(sub,id){
+  curSub=sub||SUBS[0];
+  curMid=id||null;
+  curView=null;
+  render();
+}
+
+function renderMain(){
+  var d=loadData();
+  var total=d.length;
+  var atts=0;
+  for(var i=0;i<d.length;i++)atts+=d[i].att.length;
+  var today=new Date().toISOString().slice(0,10);
+  var tod=d.filter(function(m){return m.date===today;}).length;
+  var html='';
+  html+='<div class="card"><div class="stat-grid">';
+  html+='<div class="stat-box"><span>'+total+'</span><small>全部会议</small></div>';
+  html+='<div class="stat-box g"><span>'+tod+'</span><small>今日会议</small></div>';
+  html+='<div class="stat-box b"><span>'+atts+'</span><small>签到人次</small></div>';
+  html+='</div></div>';
+  html+='<div class="card">';
+  html+='<div class="card-title">快捷入口</div>';
+  html+='<div class="btn-row"><button class="btn" onclick="go(\'create\')">+ 创建会议</button>';
+  html+='<button class="btn btn-o" onclick="go(\'history\')">📋 历史记录</button>';
+  html+='<button class="btn btn-b" onclick="go(\'stats\')">📊 数据统计</button></div>';
+  html+='</div>';
+  if(d.length>0){
+    var last=d[d.length-1];
+    html+='<div class="card">';
+    html+='<div class="card-title">最近会议 <span class="fr" onclick="go(\'history\')">查看全部 →</span></div>';
+    html+='<div class="hist-item'+(last.att.length>0?' done':'')+'">';
+    html+='<h4>'+escHtml(last.name)+'</h4>';
+    html+='<p>📅 '+escHtml(last.date)+' '+(last.time||'')+' | 📍 '+(last.place?escHtml(last.place):'未设地点')+'</p>';
+    html+='<p>👥 已签到 '+last.att.length+(last.exp?' / '+last.exp:'')+' 人';
+    if(last.exp&&last.att.length>0){
+      var pct=Math.round(last.att.length/last.exp*100);
+      html+=' <span style="font-size:12px;color:'+(pct>=90?'var(--cg)':pct>=60?'var(--cy)':'var(--cr)')+'">('+pct+'%)</span>';
     }
-    renderSelect();
-    renderHist();
-    route();
-}
-function route() {
-    var h = location.hash;
-    if (h.match(/^#\/(\w+)$/)) {
-        var id = RegExp.$1;
-        var data = load();
-        var m = data.find(function(x){ return x.id===id; });
-        if (m) {
-            document.getElementById('pnl-main').classList.remove('active');
-            document.getElementById('pnl-page').classList.add('active');
-            document.getElementById('p-badge').textContent = m.date;
-            document.getElementById('p-title').textContent = m.name;
-            document.getElementById('p-meta').textContent = (m.time||'') + '  ' + (m.addr||'待定');
-            document.getElementById('p-name').value = '';
-            document.getElementById('p-dept').value = '';
-            document.getElementById('pcard').classList.remove('succ');
-            document.getElementById('p-succ').innerHTML = '';
-            window._pageId = id;
-        } else {
-            location.hash = '';
-        }
-    } else {
-        document.getElementById('pnl-page').classList.remove('active');
-        document.getElementById('pnl-main').classList.add('active');
-        renderSelect();
+    html+='</p>';
+    if(last.exp&&last.att.length>0){
+      var pct2=Math.round(last.att.length/last.exp*100);
+      var cls='bar'+(pct2>=90?'':pct2>=60?' warn':' danger');
+      html+='<div class="bar-bg"><div class="bar '+cls+'" style="width:'+Math.min(pct2,100)+'%"></div></div>';
     }
-}
-window.addEventListener('hashchange', route);
-
-// ============================================================
-//  签到
-// ============================================================
-function getLink(id) {
-    return location.origin + location.pathname + '#/' + id;
+    var link=location.origin+location.pathname+'?m='+last.id;
+    html+='<div class="link-row"><input value="'+link+'" readonly><button class="btn btn-b" onclick="copyL(\''+last.id+'\')">复制</button></div>';
+    html+='</div></div>';
+  }
+  document.getElementById('main').innerHTML=html;
 }
 
-function getQrApi(url, size) {
-    size = size || 180;
-    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=8&data=' + encodeURIComponent(url);
+function renderCreate(){
+  var html='';
+  html+='<div class="card">';
+  html+='<div class="card-title">📅 创建新会议</div>';
+  html+='<div class="form-group"><label>会议主题 *</label><input id="m-name" placeholder="如：2026年4月月度经营会议"></div>';
+  html+='<div class="row"><div class="form-group"><label>会议日期 *</label><input type="date" id="m-date" value="'+new Date().toISOString().slice(0,10)+'"></div>';
+  html+='<div class="form-group"><label>会议时间</label><input type="time" id="m-time" value="09:00"></div></div>';
+  html+='<div class="form-group"><label>会议地点</label><input id="m-place" placeholder="如：二楼会议室"></div>';
+  html+='<div class="form-group"><label>主持人</label><input id="m-host" placeholder="如：张三"></div>';
+  html+='<div class="form-group"><label>预计人数</label><input type="number" id="m-exp" placeholder="如：30" min="1"></div>';
+  html+='<div class="form-group"><label>备注</label><textarea id="m-note" placeholder="可选"></textarea></div>';
+  html+='<div class="btn-row"><button class="btn btn-g" onclick="subCreate()">✅ 确认创建</button>';
+  html+='<button class="btn btn-o" onclick="go(\'history\')">取消</button></div>';
+  html+='</div>';
+  document.getElementById('main').innerHTML=html;
 }
 
-function doSignin() {
-    var sel = document.getElementById('s-meeting');
-    var id = sel.value;
-    var name = document.getElementById('s-name').value.trim();
-    var dept = document.getElementById('s-dept').value.trim();
-    if (!id) { toast('请先选择会议', 'er'); return; }
-    if (!name) { toast('请输入姓名', 'er'); return; }
-    var data = load();
-    var m = data.find(function(x){ return x.id===id; });
-    if (!m) { toast('会议不存在', 'er'); return; }
-    var already = m.att.find(function(a){ return a.name===name; });
-    if (already) {
-        toast('您已签到，无需重复签到', 'er');
-        return;
+function subCreate(){
+  var name=document.getElementById('m-name').value.trim();
+  var date=document.getElementById('m-date').value;
+  var time=document.getElementById('m-time').value;
+  var place=document.getElementById('m-place').value.trim();
+  var host=document.getElementById('m-host').value.trim();
+  var exp=parseInt(document.getElementById('m-exp').value,10)||0;
+  var note=document.getElementById('m-note').value.trim();
+  if(!name||!date){alert('请填写会议主题和日期');return;}
+  var d=loadData();
+  var m={id:genId(),name:name,date:date,time:time,place:place,host:host,exp:exp,note:note,att:[],created:new Date().toISOString()};
+  d.push(m);
+  saveData(d);
+  go('meeting',m.id);
+}
+
+function renderMeeting(id){
+  var d=loadData();
+  var m=null;
+  for(var i=0;i<d.length;i++){if(d[i].id===id){m=d[i];break;}}
+  if(!m){document.getElementById('main').innerHTML='<div class="empty"><strong>会议不存在</strong><p>请返回历史记录选择有效会议</p></div>';return;}
+  var link=location.origin+location.pathname+'?m='+m.id;
+  var html='';
+  html+='<div class="topbar"><button onclick="go(\'history\')">←</button><h2>'+escHtml(m.name)+'</h2><button onclick="go(\'export\',\''+m.id+'\')">📤</button></div>';
+  html+='<div class="card">';
+  html+='<div style="font-size:13px;color:#555;margin-bottom:12px">';
+  html+='📅 '+escHtml(m.date)+' '+(m.time||'')+' | 📍 '+(m.place?escHtml(m.place):'未设地点');
+  if(m.host)html+=' | 🎤 '+escHtml(m.host);
+  html+='</div>';
+  if(m.exp)html+='<div style="font-size:13px;margin-bottom:10px">👥 预计 '+m.exp+' 人 | 已签到 '+m.att.length+' 人';
+  var pct2=m.exp&&m.att.length>0?Math.round(m.att.length/m.exp*100):0;
+  if(m.exp&&m.att.length>0)html+=' <span style="font-size:12px;color:'+(pct2>=90?'var(--cg)':pct2>=60?'var(--cy)':'var(--cr)')+'">('+pct2+'%)</span>';
+  html+='</div>';
+  if(m.exp&&m.att.length>0){
+    var barCls='bar'+(pct2>=90?'':pct2>=60?' warn':' danger');
+    html+='<div class="bar-bg"><div class="bar '+barCls+'" style="width:'+Math.min(pct2,100)+'%"></div></div>';
+  }
+  html+='<div class="link-row"><input id="lnk" value="'+link+'" readonly><button class="btn btn-b" onclick="copyL(\''+m.id+'\')">复制</button></div>';
+  html+='<div class="qr-area" id="qr-area"><button class="btn btn-o" onclick="showQR(\''+m.id+'\')">🔲 生成二维码</button></div>';
+  html+='</div>';
+  html+='<div class="card">';
+  html+='<div class="card-title">✏️ 现场签到</div>';
+  html+='<div class="form-group"><label>姓名 *</label><input id="s-name" placeholder="请输入姓名" onkeydown="if(event.key===\'Enter\')doSign(\''+m.id+'\')"></div>';
+  html+='<div class="form-group"><label>部门</label><div class="dept-tags" id="dept-tags"></div>';
+  html+='<input id="s-dept" placeholder="或手动输入部门" style="margin-top:6px"></div>';
+  html+='<button class="btn btn-g" style="width:100%" onclick="doSign(\''+m.id+'\')">✅ 确认签到</button>';
+  html+='</div>';
+  var tagHtml='';
+  for(var j=0;j<DEPT_LIST.length;j++){
+    tagHtml+='<span class="dept-tag" onclick="selDept(this)">'+escHtml(DEPT_LIST[j])+'</span>';
+  }
+  document.getElementById('main').innerHTML=html;
+  document.getElementById('dept-tags').innerHTML=tagHtml;
+  renderAttList(m);
+}
+
+function selDept(el){
+  document.querySelectorAll('.dept-tag').forEach(function(t){t.classList.remove('sel');});
+  el.classList.add('sel');
+  document.getElementById('s-dept').value=el.textContent.trim();
+}
+
+function doSign(mid){
+  var name=document.getElementById('s-name').value.trim();
+  var dept=document.getElementById('s-dept').value.trim();
+  if(!name){alert('请输入姓名');return;}
+  var d=loadData();
+  var m=null;
+  for(var i=0;i<d.length;i++){if(d[i].id===mid){m=d[i];break;}}
+  if(!m)return;
+  var existing=-1;
+  for(var k=0;k<m.att.length;k++){
+    if(m.att[k].name===name){existing=k;break;}
+  }
+  if(existing>=0){
+    m.att.splice(existing,1);
+  }
+  m.att.push({name:name,dept:dept,time:new Date().toISOString()});
+  saveData(d);
+  document.getElementById('s-name').value='';
+  document.getElementById('s-dept').value='';
+  document.querySelectorAll('.dept-tag').forEach(function(t){t.classList.remove('sel');});
+  renderAttList(m);
+}
+
+function renderAttList(m){
+  var el=document.getElementById('att-list');
+  if(!el)return;
+  var html='';
+  if(m.att.length===0){
+    html='<div class="empty"><strong>暂无签到记录</strong>请等待参会人员扫码或现场签到</div>';
+  }else{
+    var groups={};
+    for(var i=0;i<m.att.length;i++){
+      var key=m.att[i].dept||'未填写部门';
+      if(!groups[key])groups[key]=[];
+      groups[key].push(m.att[i]);
     }
-    m.att.push({name: name, dept: dept, t: new Date().toISOString()});
-    save(data);
-    document.getElementById('succ-text').textContent = name + ' 已签到成功！';
-    document.getElementById('scard').classList.add('succ');
-}
-
-function doPageSignin() {
-    if (!window._pageId) return;
-    var name = document.getElementById('p-name').value.trim();
-    var dept = document.getElementById('p-dept').value.trim();
-    if (!name) { toast('请输入姓名', 'er'); return; }
-    var data = load();
-    var m = data.find(function(x){ return x.id===window._pageId; });
-    if (!m) { toast('会议不存在', 'er'); return; }
-    var already = m.att.find(function(a){ return a.name===name; });
-    if (already) { toast('您已签到，无需重复签到', 'er'); return; }
-    m.att.push({name:name, dept:dept, t: new Date().toISOString()});
-    save(data);
-    document.getElementById('p-succ').innerHTML = '<p style="color:#27ae60;font-weight:700;">' + name + ' 已签到成功！</p><button class="btn btn-secondary" style="margin-top:16px;" onclick="document.getElementById(\\'pcard\\').classList.remove(\\'succ\\');document.getElementById(\\'p-name\\').value=\\'\\';document.getElementById(\\'p-dept\\').value=\\'\\';">再签到一次</button>';
-    document.getElementById('pcard').classList.add('succ');
-}
-
-function resetSc() {
-    document.getElementById('s-name').value = '';
-    document.getElementById('s-dept').value = '';
-    document.getElementById('s-meeting').value = '';
-    document.getElementById('scard-title').textContent = '选择要签到的会议';
-    document.getElementById('scard-meta').textContent = '';
-    document.getElementById('scard').classList.remove('succ');
-}
-
-function onSMeeting(id) {
-    var data = load();
-    var m = data.find(function(x){ return x.id===id; });
-    if (m) {
-        document.getElementById('scard-title').textContent = m.name;
-        document.getElementById('scard-meta').textContent = (m.time||'') + '  📍 ' + (m.addr||'待定');
+    var keys=Object.keys(groups).sort();
+    for(var g=0;g<keys.length;g++){
+      var k=keys[g];
+      var list=groups[k];
+      html+='<div style="margin-bottom:12px">';
+      html+='<div style="font-size:12px;color:var(--c);font-weight:600;margin-bottom:4px">'+escHtml(k)+' ('+list.length+'人)</div>';
+      for(var p=0;p<list.length;p++){
+        var a=list[p];
+        var t=a.time?new Date(a.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}):'';
+        html+='<div class="att-item">';
+        html+='<input class="ok" value="'+escHtml(a.name)+' '+t+'" readonly>';
+        html+='<button onclick="delAtt(\''+m.id+'\',\''+escHtml(a.name)+'\')" title="删除">🗑</button>';
+        html+='</div>';
+      }
+      html+='</div>';
     }
+  }
+  var countHtml='<div class="att-num">共 '+m.att.length+' 人已签到</div>';
+  el.innerHTML=html+countHtml;
 }
 
-// ============================================================
-//  创建会议
-// ============================================================
-function createMeeting() {
-    var name = document.getElementById('m-name').value.trim();
-    var date = document.getElementById('m-date').value;
-    var time = document.getElementById('m-time').value;
-    var addr = document.getElementById('m-addr').value.trim();
-    var host = document.getElementById('m-host').value.trim();
-    var rec  = document.getElementById('m-rec').value.trim();
-    var exp  = parseInt(document.getElementById('m-exp').value) || 0;
-    if (!name) { toast('请填写会议主题', 'er'); return; }
-    if (!date) { toast('请选择会议日期', 'er'); return; }
-    var data = load();
-    data.push({id: genId(), name:name, date:date, time:time, addr:addr, host:host, rec:rec, exp:exp, att:[], created: new Date().toISOString()});
-    save(data);
-    toast('会议创建成功！', 'ok');
-    document.getElementById('m-name').value = '';
-    document.getElementById('m-addr').value = '';
-    document.getElementById('m-host').value = '';
-    document.getElementById('m-rec').value = '';
-    document.getElementById('m-exp').value = '';
-    renderSelect();
-    renderHist();
+function delAtt(mid,name){
+  if(!confirm('确认删除 '+name+' 的签到记录？'))return;
+  var d=loadData();
+  for(var i=0;i<d.length;i++){
+    if(d[i].id===mid){
+      for(var j=0;j<d[i].att.length;j++){
+        if(d[i].att[j].name===name){d[i].att.splice(j,1);break;}
+      }
+      break;
+    }
+  }
+  saveData(d);
+  renderAttList(d.find(function(m){return m.id===mid;}));
 }
 
-// ============================================================
-//  渲染会议下拉
-// ============================================================
-function renderSelect() {
-    var data = load();
-    var sel = document.getElementById('s-meeting');
-    var cur = sel.value;
-    sel.innerHTML = '<option value="">— 请选择会议 —</option>' +
-        data.map(function(m){
-            return '<option value="'+m.id+'">'+m.name+' ('+m.date+')</option>';
-        }).join('');
-    if (cur && data.find(function(m){ return m.id===cur; })) sel.value = cur;
+function copyL(id){
+  var d=loadData();
+  var m=null;
+  for(var i=0;i<d.length;i++){if(d[i].id===id){m=d[i];break;}}
+  if(!m)return;
+  var link=location.origin+location.pathname+'?m='+m.id;
+  copyText(link);
 }
 
-// ============================================================
-//  历史记录
-// ============================================================
-function renderHist() {
-    var data = load();
-    var c = document.getElementById('hist-list');
-    if (!data.length) { c.innerHTML='<p class="empty-tip">暂无会议记录</p>'; return; }
-    // 按日期倒序
-    data.slice().reverse().forEach(function(m){});
-    var html = data.slice().reverse().map(function(m){
-        var link = getLink(m.id);
-        var qr = getQrApi(link, 160);
-        return '<div class="history-item">' +
-            '<div class="history-info">' +
-                '<h4>'+escHtml(m.name)+'</h4>' +
-                '<p>📅 '+escHtml(m.date)+' '+(m.time||'')+' &nbsp; 📍 '+escHtml(m.addr||'待定')+'</p>' +
-                '<p>👥 已签到 '+m.att.length+(m.exp?'/'+m.exp:'')+' 人</p>' +
-                '<div class="share-box">' +
-                    '<div class="s-title">📲 微信扫码签到</div>' +
-                    '<div class="qr-center"><img src="'+qr+'" alt="二维码" width="160" height="160"><div class="qr-hint">微信扫一扫 · 长按保存图片</div></div>' +
-                    '<div class="s-title" style="margin-top:10px;">🔗 签到链接</div>' +
-                    '<div class="url-row">' +
-                        '<input id="li-'+m.id+'" value="'+link+'" onclick="this.select()" readonly>' +
-                        '<button class="btn btn-secondary btn-sm" onclick="copyL(\\''+m.id+'\\')">复制</button>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="history-actions">' +
-                '<button class="btn btn-primary btn-sm" onclick="showMd(\\''+m.id+'\\')">详情</button>' +
-                '<button class="btn btn-danger btn-sm" onclick="delM(\\''+m.id+'\\')">删除</button>' +
-            '</div>' +
-        '</div>';
-    }).join('');
-    c.innerHTML = html;
+function copyText(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){alert('已复制！');});
+  }else{
+    var ta=document.createElement('textarea');
+    ta.value=text;
+    ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{document.execCommand('copy');alert('已复制！');}catch(e){alert('复制失败，请手动复制');}
+    document.body.removeChild(ta);
+  }
 }
 
-function escHtml(s) {
-    return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function showQR(id){
+  var d=loadData();
+  var m=null;
+  for(var i=0;i<d.length;i++){if(d[i].id===id){m=d[i];break;}}
+  if(!m)return;
+  var link=location.origin+location.pathname+'?m='+m.id;
+  var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(link);
+  var html='<div style="text-align:center">';
+  html+='<div style="font-size:14px;margin-bottom:10px;color:#333;font-weight:600">'+escHtml(m.name)+'</div>';
+  html+='<img src="'+qrUrl+'" alt="二维码" style="width:200px;height:200px;border-radius:10px;border:2px solid #eee">';
+  html+='<div style="margin-top:10px;font-size:12px;color:#888">长按或右键保存图片</div>';
+  html+='<div style="margin-top:8px;font-size:12px;color:var(--c);word-break:break-all;padding:0 10px">'+link+'</div>';
+  html+='<div style="margin-top:12px"><button class="btn btn-b" onclick="copyL(\''+id+'\')">复制链接</button></div>';
+  html+='</div>';
+  openModal(html);
 }
 
-function copyL(id) {
-    var v = document.getElementById('li-'+id).value;
-    navigator.clipboard.writeText(v).then(function(){ toast('链接已复制！', 'ok'); }).catch(function(){ toast('请手动复制', 'er'); });
+function openModal(content){
+  document.getElementById('modal-body').innerHTML='<span class="modal-close" onclick="closeModal()">×</span>'+content;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
 }
 
-// ============================================================
-//  详情弹窗
-// ============================================================
-function showMd(id) {
-    gId = id;
-    var data = load();
-    var m = data.find(function(x){ return x.id===id; });
-    if (!m) return;
-    document.getElementById('md-title').textContent = m.name;
-    var attHtml = m.att.length ? m.att.map(function(a, i){
-        return '<div class="att-row">' +
-            '<div class="att-av">'+escHtml(a.name.substr(0,1))+'</div>' +
-            '<div><div class="att-name">'+escHtml(a.name)+'</div><div class="att-dept">'+escHtml(a.dept||'未填写部门')+'</div></div>' +
-            '<div class="att-time">'+new Date(a.t).toLocaleTimeString('zh-CN')+'</div>' +
-        '</div>';
-    }).join('') : '<p class="empty-tip">暂无签到记录</p>';
-    document.getElementById('md-body').innerHTML =
-        '<p style="color:#888;margin-bottom:12px;">📅 '+escHtml(m.date)+' '+(m.time||'')+' &nbsp; 📍 '+escHtml(m.addr||'待定')+'</p>' +
-        '<p style="color:#888;margin-bottom:16px;">👥 已签到 '+m.att.length+' 人'+(m.exp?'（应到'+m.exp+'人）':'')+'</p>' +
-        '<div class="att-list">'+attHtml+'</div>';
-    document.getElementById('md').classList.add('active');
+function renderHistory(){
+  var d=loadData();
+  d.sort(function(a,b){return(b.created||'').localeCompare(a.created||'');});
+  var html='';
+  html+='<div class="card">';
+  html+='<div class="card-title">📋 历史会议 <span class="fr" onclick="go(\'create\')">+ 新建</span></div>';
+  if(d.length===0){
+    html+='<div class="empty"><strong>暂无会议记录</strong>点击上方"创建会议"开始使用</div>';
+  }else{
+    for(var i=0;i<d.length;i++){
+      var m=d[i];
+      var pct2=m.exp&&m.att.length>0?Math.round(m.att.length/m.exp*100):0;
+      var barCls=pct2>=90?'':pct2>=60?' warn':' danger';
+      html+='<div class="hist-item'+(m.att.length>0?' done':'')+'">';
+      html+='<h4>'+escHtml(m.name)+'</h4>';
+      html+='<p>📅 '+escHtml(m.date)+' '+(m.time||'')+' | 📍 '+(m.place?escHtml(m.place):'—')+'</p>';
+      html+='<p>👥 已签到 '+m.att.length+(m.exp?' / '+m.exp:'')+' 人';
+      if(pct2>0)html+=' <span style="font-size:12px;color:'+(pct2>=90?'var(--cg)':pct2>=60?'var(--cy)':'var(--cr)')+'">('+pct2+'%)</span>';
+      html+='</p>';
+      if(m.exp&&m.att.length>0){
+        html+='<div class="bar-bg"><div class="bar '+barCls+'" style="width:'+Math.min(pct2,100)+'%"></div></div>';
+      }
+      var link=location.origin+location.pathname+'?m='+m.id;
+      html+='<div class="link-row"><input value="'+link+'" readonly><button class="btn btn-b" onclick="copyL(\''+m.id+'\')">复制</button></div>';
+      html+='<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">';
+      html+='<button class="btn btn-g" style="font-size:12px;padding:6px 12px" onclick="go(\'meeting\',\''+m.id+'\')">✏️ 现场签到</button>';
+      if(m.att.length>0)html+='<button class="btn btn-b" style="font-size:12px;padding:6px 12px" onclick="showQR(\''+m.id+'\')">🔲 二维码</button>';
+      html+='<button class="btn btn-y" style="font-size:12px;padding:6px 12px" onclick="go(\'export\',\''+m.id+'\')">📤 导出</button>';
+      html+='<button class="btn btn-r" style="font-size:12px;padding:6px 12px" onclick="delM(\''+m.id+'\')">🗑 删除</button>';
+      html+='</div></div>';
+    }
+  }
+  html+='</div>';
+  document.getElementById('main').innerHTML=html;
 }
 
-function closeMd() { document.getElementById('md').classList.remove('active'); gId = null; }
-
-function delM(id) {
-    if (!confirm('确定删除该会议及所有签到记录？')) return;
-    var data = load().filter(function(m){ return m.id!==id; });
-    save(data);
-    renderSelect();
-    renderHist();
-    toast('已删除', 'ok');
+function delM(id){
+  if(!confirm('删除后不可恢复，确定要删除吗？'))return;
+  var d=loadData();
+  for(var i=0;i<d.length;i++){
+    if(d[i].id===id){d.splice(i,1);break;}
+  }
+  saveData(d);
+  go('history');
 }
 
-function delMd() {
-    if (gId) delM(gId);
-    closeMd();
+function renderStats(){
+  var d=loadData();
+  if(d.length===0){
+    document.getElementById('main').innerHTML='<div class="card"><div class="empty"><strong>暂无数据</strong>创建会议后即可查看统计</div></div>';
+    return;
+  }
+  var atts=0;
+  for(var i=0;i<d.length;i++)atts+=d[i].att.length;
+  var deptCount={};
+  for(var i=0;i<d.length;i++){
+    for(var j=0;j<d[i].att.length;j++){
+      var dept=d[i].att[j].dept||'未填写';
+      deptCount[dept]=(deptCount[dept]||0)+1;
+    }
+  }
+  var sorted=Object.keys(deptCount).sort(function(a,b){return deptCount[b]-deptCount[a];});
+  var max=sorted.length>0?deptCount[sorted[0]]:1;
+  var html='';
+  html+='<div class="card">';
+  html+='<div class="stat-grid">';
+  html+='<div class="stat-box"><span>'+d.length+'</span><small>会议总数</small></div>';
+  html+='<div class="stat-box g"><span>'+atts+'</span><small>签到人次</small></div>';
+  html+='<div class="stat-box b"><span>'+Math.round(atts/Math.max(d.length,1))+'</span><small>场均人数</small></div>';
+  html+='</div></div>';
+  html+='<div class="card">';
+  html+='<div class="card-title">🏢 部门签到分布</div>';
+  if(sorted.length===0){
+    html+='<div class="empty">暂无部门数据</div>';
+  }else{
+    for(var k=0;k<sorted.length;k++){
+      var dept=sorted[k];
+      var cnt=deptCount[dept];
+      var pct=Math.round(cnt/max*100);
+      html+='<div style="margin-bottom:10px">';
+      html+='<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">';
+      html+='<span>'+escHtml(dept)+'</span><span style="color:var(--c)">'+cnt+'人</span></div>';
+      html+='<div style="background:#e8edf4;border-radius:6px;height:8px">';
+      html+='<div style="height:100%;background:var(--c);border-radius:6px;width:'+pct+'%"></div>';
+      html+='</div></div>';
+    }
+  }
+  html+='</div>';
+  html+='<div class="card">';
+  html+='<div class="card-title">📅 近期会议（最近10场）</div>';
+  var recent=d.slice().sort(function(a,b){return(b.date||'').localeCompare(a.date||'');}).slice(0,10);
+  for(var r=0;r<recent.length;r++){
+    var m=recent[r];
+    var pct2=m.exp&&m.att.length>0?Math.round(m.att.length/m.exp*100):0;
+    html+='<div style="padding:10px 0;border-bottom:1px solid #f2f2f2">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center">';
+    html+='<div><div style="font-size:14px;font-weight:500">'+escHtml(m.name)+'</div>';
+    html+='<div style="font-size:12px;color:#888">'+escHtml(m.date)+'</div></div>';
+    html+='<div style="text-align:right"><div style="font-size:15px;font-weight:600;color:var(--c)">'+m.att.length+(m.exp?'/'+m.exp:'')+'</div>';
+    if(pct2>0)html+='<div style="font-size:11px;color:'+(pct2>=90?'var(--cg)':pct2>=60?'var(--cy)':'var(--cr)')+'">'+pct2+'%</div>';
+    html+='</div></div></div>';
+  }
+  html+='</div>';
+  document.getElementById('main').innerHTML=html;
 }
 
-function exportMd() {
-    if (!gId) return;
-    var data = load();
-    var m = data.find(function(x){ return x.id===gId; });
-    if (!m) return;
-    var rows = [['姓名','部门','签到时间']];
-    m.att.forEach(function(a){
-        rows.push([a.name, a.dept||'', new Date(a.t).toLocaleString('zh-CN')]);
-    });
-    var csv = rows.map(function(r){ return r.map(function(c){ return '"'+(c||'').replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
-    var blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url; a.download = '签到表_'+m.name+'_'+m.date+'.csv';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+function renderExport(id){
+  var d=loadData();
+  var m=null;
+  for(var i=0;i<d.length;i++){if(d[i].id===id){m=d[i];break;}}
+  if(!m){
+    document.getElementById('main').innerHTML='<div class="empty"><strong>会议不存在</strong></div>';
+    return;
+  }
+  var link=location.origin+location.pathname+'?m='+m.id;
+  var csv='\uFEFF姓名,部门,签到时间\n';
+  for(var j=0;j<m.att.length;j++){
+    var a=m.att[j];
+    var t=a.time?new Date(a.time).toLocaleString('zh-CN'):'';
+    csv+=escCsv(a.name)+','+escCsv(a.dept||'')+','+t+'\n';
+  }
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var html='';
+  html+='<div class="topbar"><button onclick="go(\'meeting\',\''+m.id+'\')">←</button><h2>📤 导出签到表</h2><div></div></div>';
+  html+='<div class="card">';
+  html+='<div class="card-title">'+escHtml(m.name)+' <span class="fr" onclick="go(\'meeting\',\''+m.id+'\')">← 返回</span></div>';
+  html+='<div class="info-box"><strong>导出统计</strong><br>总签到人数：'+m.att.length+' 人<br>';
+  if(m.exp)html+='预计人数：'+m.exp+' 人 | ';
+  html+='出勤率：'+(m.exp&&m.att.length>0?Math.round(m.att.length/m.exp*100)+'%':'—')+'</div>';
+  if(m.att.length>0){
+    html+='<div style="margin-bottom:12px"><strong style="font-size:13px">签到名单预览</strong></div>';
+    var groups={};
+    for(var g=0;g<m.att.length;g++){
+      var key=m.att[g].dept||'未填写部门';
+      if(!groups[key])groups[key]=[];
+      groups[key].push(m.att[g]);
+    }
+    var keys=Object.keys(groups).sort();
+    for(var gi=0;gi<keys.length;gi++){
+      html+='<div style="margin-bottom:10px">';
+      html+='<div style="font-size:12px;font-weight:600;color:var(--c);margin-bottom:4px">'+escHtml(keys[gi])+' ('+groups[keys[gi]].length+'人)</div>';
+      for(var pi=0;pi<groups[keys[gi]].length;pi++){
+        var person=groups[keys[gi]][pi];
+        var t2=person.time?new Date(person.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}):'';
+        html+='<div style="font-size:13px;padding:4px 0;border-bottom:1px dashed #f2f2f2">';
+        html+=escHtml(person.name)+' <span style="color:#888;font-size:12px">'+t2+'</span></div>';
+      }
+      html+='</div>';
+    }
+  }
+  html+='<div style="margin-top:16px"><a href="'+url+'" download="签到表_'+escHtml(m.name)+'_'+m.date+'.csv" class="btn btn-g" style="display:block;text-align:center;text-decoration:none">📥 下载 CSV 文件</a></div>';
+  html+='<div class="info-box g" style="margin-top:12px">';
+  html+='💡 用 Excel 打开 CSV 后，如遇乱码请：<br>数据 → 分列 → 分隔符号选「逗号」→ 文件类型选「UTF-8」';
+  html+='</div>';
+  html+='</div>';
+  document.getElementById('main').innerHTML=html;
 }
 
-// ============================================================
-//  统计
-// ============================================================
-function renderStats() {
-    var data = load();
-    var total = data.length;
-    var signed = data.reduce(function(s,m){ return s+m.att.length; }, 0);
-    var rated = data.filter(function(m){ return m.exp>0; });
-    var avgRate = rated.length ? Math.round(rated.reduce(function(s,m){ return s+m.att.length/m.exp*100; }, 0) / rated.length) : 0;
-    document.getElementById('st-total').textContent = total;
-    document.getElementById('st-signed').textContent = signed;
-    document.getElementById('st-rate').textContent = rated.length ? avgRate+'%' : '—';
-    var maxAtt = Math.max.apply(null, data.map(function(m){ return m.att.length; }).concat([1]));
-    var barC = document.getElementById('bar-c');
-    var html = data.slice().reverse().slice(0,7).map(function(m){
-        var pct = Math.round(m.att.length/maxAtt*100);
-        return '<div class="bar-row"><div class="bar-label">'+escHtml(m.name.substr(0,6))+'</div><div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%"></div></div><div class="bar-val">'+m.att.length+'人</div></div>';
-    }).join('');
-    barC.innerHTML = html;
+function escCsv(s){
+  if(s==null)return'';
+  s=String(s);
+  if(s.search(/[,"\n]/)>=0){
+    return '"'+s.replace(/"/g,'""')+'"';
+  }
+  return s;
 }
 
-// ============================================================
-//  切换
-// ============================================================
-function switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(function(b,i){ b.classList.toggle('active', i===(tab==='signin'?0:1)); });
-    document.getElementById('tab-signin').style.display = tab==='signin'?'block':'none';
-    document.getElementById('tab-host').style.display = tab==='host'?'block':'none';
-    if (tab==='stats') renderStats();
-}
-function switchSub(sub) {
-    var subs = ['create','history','stats'];
-    subs.forEach(function(s){ document.getElementById('btn-'+s).classList.toggle('active', s===sub); });
-    subs.forEach(function(s){ var el=document.getElementById('sub-'+s); if(el) el.style.display=s===sub?'block':'none'; });
-    if (sub==='history') renderHist();
-    if (sub==='stats') renderStats();
+function renderSignPage(id){
+  var d=loadData();
+  var m=null;
+  for(var i=0;i<d.length;i++){if(d[i].id===id){m=d[i];break;}}
+  var html='';
+  html+='<header><h1>🏢 江南会议签到系统</h1></header>';
+  if(!m){
+    html+='<div class="card"><div class="info-box r">❌ 会议不存在或已过期，请联系会议组织者确认。</div></div>';
+    document.getElementById('app').innerHTML=html;
+    return;
+  }
+  html+='<div class="card">';
+  html+='<div style="text-align:center;margin-bottom:16px">';
+  html+='<div style="font-size:18px;font-weight:600;margin-bottom:6px">'+escHtml(m.name)+'</div>';
+  html+='<div style="color:#666;font-size:14px">';
+  html+='📅 '+escHtml(m.date)+' '+(m.time||'')+'<br>';
+  if(m.place)html+='📍 '+escHtml(m.place)+'<br>';
+  if(m.host)html+='🎤 主持人：'+escHtml(m.host);
+  html+='</div></div>';
+  html+='<div style="text-align:center;margin-bottom:14px;font-size:13px;color:#888">';
+  html+='👥 已签到 '+m.att.length+(m.exp?' / '+m.exp:'')+' 人';
+  if(m.exp&&m.att.length>0){
+    var pct2=Math.round(m.att.length/m.exp*100);
+    html+=' <span style="color:'+(pct2>=90?'var(--cg)':pct2>=60?'var(--cy)':'var(--cr)')+'">('+pct2+'%)</span>';
+  }
+  html+='</div>';
+  if(m.exp&&m.att.length>0){
+    var pct3=Math.round(m.att.length/m.exp*100);
+    var barCls=pct3>=90?'':pct3>=60?' warn':' danger';
+    html+='<div class="bar-bg" style="margin-bottom:14px"><div class="bar '+barCls+'" style="width:'+Math.min(pct3,100)+'%"></div></div>';
+  }
+  html+='</div>';
+  html+='<div class="card">';
+  html+='<div class="card-title">✏️ 签到信息</div>';
+  html+='<div class="form-group"><label>姓名 *</label><input id="sp-name" placeholder="请输入本人姓名" onkeydown="if(event.key===\'Enter\')spSign()"></div>';
+  html+='<div class="form-group"><label>部门</label><div class="dept-tags" id="sp-dept-tags"></div>';
+  html+='<input id="sp-dept" placeholder="或手动输入部门" style="margin-top:6px"></div>';
+  html+='<button class="btn btn-g" style="width:100%;font-size:15px;padding:12px" onclick="spSign()">✅ 确认签到</button>';
+  var tagHtml='';
+  for(var j=0;j<DEPT_LIST.length;j++){
+    tagHtml+='<span class="dept-tag" onclick="spSelDept(this)">'+escHtml(DEPT_LIST[j])+'</span>';
+  }
+  html+='</div>';
+  if(m.att.length>0){
+    html+='<div class="card"><div class="card-title">已签到人员</div>';
+    var groups={};
+    for(var g=0;g<m.att.length;g++){
+      var key2=m.att[g].dept||'未填写部门';
+      if(!groups[key2])groups[key2]=[];
+      groups[key2].push(m.att[g]);
+    }
+    var keys2=Object.keys(groups).sort();
+    for(var gi2=0;gi2<keys2.length;gi2++){
+      html+='<div style="margin-bottom:10px">';
+      html+='<div style="font-size:12px;font-weight:600;color:var(--c);margin-bottom:4px">'+escHtml(keys2[gi2])+' ('+groups[keys2[gi2]].length+'人)</div>';
+      for(var pi2=0;pi2<groups[keys2[gi2]].length;pi2++){
+        var person2=groups[keys2[gi2]][pi2];
+        var t3=person2.time?new Date(person2.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}):'';
+        html+='<div style="font-size:13px;padding:5px 0;border-bottom:1px dashed #f2f2f2">';
+        html+='✅ '+escHtml(person2.name)+' <span style="color:#888;font-size:12px">'+t3+'</span></div>';
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+  }
+  document.getElementById('app').innerHTML=html;
+  document.getElementById('sp-dept-tags').innerHTML=tagHtml;
+  html='';
 }
 
-// ============================================================
-//  Toast
-// ============================================================
-function toast(msg, cls) {
-    var t = document.getElementById('toast');
-    t.textContent = msg; t.className = 'toast show '+(cls||'');
-    setTimeout(function(){ t.classList.remove('show'); }, 2200);
+function spSelDept(el){
+  document.querySelectorAll('#sp-dept-tags .dept-tag').forEach(function(t){t.classList.remove('sel');});
+  el.classList.add('sel');
+  document.getElementById('sp-dept').value=el.textContent.trim();
 }
 
-// ============================================================
-//  启动
-// ============================================================
-document.addEventListener('DOMContentLoaded', init);
+function spSign(){
+  var name=document.getElementById('sp-name').value.trim();
+  var dept=document.getElementById('sp-dept').value.trim();
+  if(!name){alert('请输入姓名');return;}
+  var d=loadData();
+  var params=new URLSearchParams(location.search);
+  var mid=params.get('m');
+  var m=null;
+  for(var i=0;i<d.length;i++){if(d[i].id===mid){m=d[i];break;}}
+  if(!m)return;
+  var ex=-1;
+  for(var k=0;k<m.att.length;k++){
+    if(m.att[k].name===name){ex=k;break;}
+  }
+  if(ex>=0){
+    if(!confirm('您之前已完成签到。是否更新部门信息？')){
+      document.getElementById('sp-name').value='';
+      document.getElementById('sp-dept').value='';
+      return;
+    }
+    m.att.splice(ex,1);
+  }
+  m.att.push({name:name,dept:dept,time:new Date().toISOString()});
+  saveData(d);
+  alert('✅ 签到成功！');
+  renderSignPage(mid);
+}
+
+function render(){
+  if(curSub==='stats'){renderStats();return;}
+  if(curSub==='history'){renderHistory();return;}
+  if(curSub==='create'){renderCreate();return;}
+  if(curSub==='meeting'){renderMeeting(curMid);return;}
+  if(curSub==='export'){renderExport(curMid);return;}
+  renderMain();
+}
+
+window.go=go;
+window.copyL=copyL;
+window.showQR=showQR;
+window.closeModal=closeModal;
+window.selDept=selDept;
+window.spSelDept=spSelDept;
+window.doSign=doSign;
+window.delAtt=delAtt;
+window.subCreate=subCreate;
+window.spSign=spSign;
+
+function init(){
+  var params=new URLSearchParams(location.search);
+  var mid=params.get('m');
+  if(mid){
+    renderSignPage(mid);
+  }else{
+    render();
+  }
+}
+init();
+})();
 </script>
 </body>
 </html>
