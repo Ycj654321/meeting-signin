@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>江南会议签到系统</title>
+<script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--c:#1a5cad;--cg:#2a7a3a;--cr:#c0392b;--cb:#2980b9;--co:#d35400;--cy:#b7950b;--cy2:#7d6608;--cl:#6c3483;--cy3:#1a5276;--cy4:#17202a;--c5:#566573;--c6:#7b241c;--c7:#1e8449;--c8:#1f618d;--c9:#7d6608;--c10:#512e5f;--c11:#0e6655;--c12:#6e2f1a}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -87,6 +88,8 @@ textarea{resize:vertical;min-height:72px}
 .info-box{background:#f0f7ff;border-left:3px solid var(--cb);border-radius:6px;padding:10px 14px;font-size:13px;color:var(--c);margin-bottom:14px;line-height:1.6}
 .info-box.r{background:#fff5f5;border-color:var(--cr);color:var(--cr)}
 .info-box.g{background:#f0fff8;border-color:var(--cg);color:var(--cg)}
+#qr-wrap img{width:260px!important;height:260px!important;border-radius:6px}
+#qr-wrap canvas{width:260px!important;height:260px!important;border-radius:6px}
 </style>
 </head>
 <body>
@@ -351,15 +354,38 @@ function showQR(id){
   for(var i=0;i<d.length;i++){if(d[i].id===id){m=d[i];break;}}
   if(!m)return;
   var link=location.origin+location.pathname+'?m='+m.id;
-  var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(link);
+  var safeName=m.name.replace(/[\\/:*?"<>|]/g,'_').slice(0,20);
   var html='<div style="text-align:center">';
   html+='<div style="font-size:14px;margin-bottom:10px;color:#333;font-weight:600">'+escHtml(m.name)+'</div>';
-  html+='<img src="'+qrUrl+'" alt="二维码" style="width:200px;height:200px;border-radius:10px;border:2px solid #eee">';
-  html+='<div style="margin-top:10px;font-size:12px;color:#888">长按或右键保存图片</div>';
+  html+='<div id="qr-wrap" style="display:inline-block;padding:12px;background:#fff;border-radius:12px;border:2px solid #e0e6f0;margin:8px 0"></div>';
   html+='<div style="margin-top:8px;font-size:12px;color:var(--c);word-break:break-all;padding:0 10px">'+link+'</div>';
-  html+='<div style="margin-top:12px"><button class="btn btn-b" onclick="copyL(\''+id+'\')">复制链接</button></div>';
+  html+='<div style="margin-top:12px"><button class="btn btn-g" id="dl-qr-btn">📥 下载二维码图片</button></div>';
+  html+='<div style="margin-top:8px"><button class="btn btn-b" onclick="copyL(\''+id+'\')">📋 复制签到链接</button></div>';
   html+='</div>';
   openModal(html);
+  // 生成二维码（本地渲染，成功率极高）
+  var wrap=document.getElementById('qr-wrap');
+  wrap.innerHTML='';
+  var qr=new QRCode(wrap,{
+    text:link,
+    width:260,
+    height:260,
+    colorDark:'#000000',
+    colorLight:'#ffffff',
+    correctLevel:QRCode.CorrectLevel.H
+  });
+  // 下载按钮
+  document.getElementById('dl-qr-btn').onclick=function(){
+    var canvas=wrap.querySelector('canvas');
+    if(canvas){
+      var a=document.createElement('a');
+      a.download='签到二维码_'+safeName+'_'+m.date+'.png';
+      a.href=canvas.toDataURL('image/png');
+      a.click();
+    }else{
+      alert('二维码生成中，请稍后点击下载');
+    }
+  };
 }
 
 function openModal(content){
